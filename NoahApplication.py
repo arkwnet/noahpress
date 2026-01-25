@@ -11,13 +11,13 @@ class Application(tkinter.Frame):
             self.master.quit()
         return
 
-    def onMouseDown(self, event):
+    def mouse_down(self, event):
         return
 
-    def onMouseUp(self, event):
+    def mouse_up(self, event):
         return
 
-    def onMouseMove(self, event):
+    def mouse_move(self, event):
         return
 
     def update(self):
@@ -30,7 +30,7 @@ class Application(tkinter.Frame):
         self.master.geometry(str(NoahCommon.MAIN_WINDOW_WIDTH) + "x" + str(NoahCommon.MAIN_WINDOW_HEIGHT))
         self.master.title("無題 - " + NoahCommon.PRODUCT_NAME)
         self.master.resizable(0, 0)
-        self.master.bind("<Motion>", self.onMouseMove)
+        self.master.bind("<Motion>", self.mouse_move)
         self.master.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.master.frame_tool = tkinter.Frame(self.master, bg = NoahCommon.COLOR_WHITE)
@@ -40,8 +40,8 @@ class Application(tkinter.Frame):
         self.master.frame_main.place(x = 40, y = 0, w = NoahCommon.MAIN_WINDOW_WIDTH - 40, h = NoahCommon.MAIN_WINDOW_HEIGHT)
         self.master.canvas = tkinter.Canvas(self.master.frame_main, borderwidth = 1, relief = "solid", bg = NoahCommon.COLOR_WHITE)
         self.master.canvas.place(x = 10, h = 10)
-        self.master.canvas.bind("<Button-1>", self.onMouseDown)
-        self.master.canvas.bind("<ButtonRelease-1>", self.onMouseUp)
+        self.master.canvas.bind("<Button-1>", self.mouse_down)
+        self.master.canvas.bind("<ButtonRelease-1>", self.mouse_up)
 
         self.filename = ""
         self.is_edit = False
