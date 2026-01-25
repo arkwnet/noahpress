@@ -1,6 +1,10 @@
 import NoahCommon
 import NoahProject
+
+import cv2
 import tkinter
+import numpy as np
+from PIL import Image, ImageTk, ImageDraw, ImageFont
 from tkinter import messagebox
 
 class Application(tkinter.Frame):
@@ -21,9 +25,24 @@ class Application(tkinter.Frame):
         return
 
     def update(self):
-        dw = int(self.project.w * self.project.dpi / NoahCommon.ONE_INCH_MM * (self.project.zoom / 100))
-        dh = int(self.project.h * self.project.dpi / NoahCommon.ONE_INCH_MM * (self.project.zoom / 100))
-        self.master.canvas.place(w = dw, h = dh)
+        self.master.canvas.place(w = self.project.pixel_zoom(self.project.get_width_px()), h = self.project.pixel_zoom(self.project.get_height_px()))
+        return
+
+    def draw(self, data):
+        inw = self.project.get_width_px()
+        inh = self.project.get_height_px()
+        exw = self.project.pixel_zoom(inw)
+        exh = self.project.pixel_zoom(inh)
+        image_bgr_in = 255 * np.ones((inh, inw, 3), np.uint8)
+        image_bgr_ex = 255 * np.ones((exh, exw, 3), np.uint8)
+        cv2.rectangle(image_bgr_in, (100, 100), (800, 600), (255, 0, 0), thickness = -1)
+        image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_AREA)
+        image_bgr_ex[:, :] = image_bgr_resize
+        image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
+        image_pil = Image.fromarray(image_rgb)
+        self.image_tk = ImageTk.PhotoImage(image_pil)
+        self.master.canvas.create_image(0, 0, image = self.image_tk, anchor = "nw")
+        return
 
     def __init__(self, master = None):
         super().__init__(master)
@@ -38,14 +57,15 @@ class Application(tkinter.Frame):
 
         self.master.frame_main = tkinter.Frame(self.master)
         self.master.frame_main.place(x = 40, y = 0, w = NoahCommon.MAIN_WINDOW_WIDTH - 40, h = NoahCommon.MAIN_WINDOW_HEIGHT)
-        self.master.canvas = tkinter.Canvas(self.master.frame_main, borderwidth = 1, relief = "solid", bg = NoahCommon.COLOR_WHITE)
+        self.master.canvas = tkinter.Canvas(self.master.frame_main, borderwidth = 1, relief = "solid")
         self.master.canvas.place(x = 10, h = 10)
         self.master.canvas.bind("<Button-1>", self.mouse_down)
         self.master.canvas.bind("<ButtonRelease-1>", self.mouse_up)
 
         self.filename = ""
         self.is_edit = False
-        self.image_bgr = None
+        self.image_tk = None
         self.project = NoahProject.Project()
 
         self.update()
+        self.draw(self.project.data)
