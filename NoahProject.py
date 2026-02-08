@@ -11,18 +11,16 @@ class Project:
         self.data = []
 
     def get_width_px(self):
-        if self.unit == "px":
-            return self.w
-        elif self.unit == "mm":
-            return int(self.w * self.dpi / NoahCommon.ONE_INCH_MM)
-        else:
-            return
+        return self.mm_to_px(self.w)
 
     def get_height_px(self):
+        return self.mm_to_px(self.h)
+
+    def mm_to_px(self, i):
         if self.unit == "px":
-            return self.h
+            return i
         elif self.unit == "mm":
-            return int(self.h * self.dpi / NoahCommon.ONE_INCH_MM)
+            return int(i * self.dpi / NoahCommon.ONE_INCH_MM)
         else:
             return
 

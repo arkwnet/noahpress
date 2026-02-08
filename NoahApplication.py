@@ -1,4 +1,5 @@
 import NoahCommon
+import NoahComponent
 import NoahProject
 
 import cv2
@@ -35,7 +36,10 @@ class Application(tkinter.Frame):
         exh = self.project.pixel_zoom(inh)
         image_bgr_in = 255 * np.ones((inh, inw, 3), np.uint8)
         image_bgr_ex = 255 * np.ones((exh, exw, 3), np.uint8)
-        cv2.rectangle(image_bgr_in, (100, 100), (800, 600), (255, 0, 0), thickness = -1)
+        for i in range(len(self.project.data)):
+            x = self.project.mm_to_px(self.project.data[i].x)
+            y = self.project.mm_to_px(self.project.data[i].y)
+            cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
         image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_AREA)
         image_bgr_ex[:, :] = image_bgr_resize
         image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
@@ -67,5 +71,7 @@ class Application(tkinter.Frame):
         self.image_tk = None
         self.project = NoahProject.Project()
 
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0)))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 30, 30, 50, 50, (0, 255, 0)))
         self.update()
         self.draw(self.project.data)
