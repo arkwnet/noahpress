@@ -9,4 +9,4 @@ class Box:
         self.w = w
         self.h = h
         self.fill = fill
-        self.select = 1
+        self.select = 0

@@ -21,8 +21,9 @@ class Project:
             return i
         elif self.unit == "mm":
             return int(i * self.dpi / NoahCommon.ONE_INCH_MM)
-        else:
-            return
+
+    def px_to_mm(self, i):
+        return int(i / self.dpi * NoahCommon.ONE_INCH_MM)
 
     def pixel_zoom(self, px):
         return int(px * (self.zoom / 100))
