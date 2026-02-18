@@ -32,7 +32,7 @@ class Application(tkinter.Frame):
                 hit = True
             else:
                 self.project.data[i].select = 0
-        self.draw(self.project.data)
+        self.is_draw = True
         return
 
     def mouse_up(self, event):
@@ -47,7 +47,7 @@ class Application(tkinter.Frame):
             elif self.project.unit == "mm":
                 self.project.data[self.mouse.i].x = int(self.project.px_to_mm(event.x - self.mouse.x) * (100 / self.project.zoom))
                 self.project.data[self.mouse.i].y = int(self.project.px_to_mm(event.y - self.mouse.y) * (100 / self.project.zoom))
-            self.draw(self.project.data)
+            self.is_draw = True
         return
 
     def update(self):
@@ -69,40 +69,42 @@ class Application(tkinter.Frame):
             img.line((sx, sy, ex, ey), fill = fill, width = width)
         return
 
-    def draw(self, data):
-        inw = self.project.get_width_px()
-        inh = self.project.get_height_px()
-        exw = self.project.pixel_zoom(inw)
-        exh = self.project.pixel_zoom(inh)
-        image_bgr_in = 255 * np.ones((inh, inw, 3), np.uint8)
-        image_bgr_ex = 255 * np.ones((exh, exw, 3), np.uint8)
-        for i in range(len(self.project.data)):
-            x = self.project.mm_to_px(self.project.data[i].x)
-            y = self.project.mm_to_px(self.project.data[i].y)
-            cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
-        image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_AREA)
-        image_bgr_ex[:, :] = image_bgr_resize
-        image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
-        image_pil = Image.fromarray(image_rgb)
-        image_draw = ImageDraw.Draw(image_pil)
-        for i in range(len(self.project.data)):
-            x = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].x))
-            y = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].y))
-            w = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].w))
-            h = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].h))
-            if self.project.data[i].select == True:
-                image_draw.line((x, y, x + w, y), fill = "black", width = 1)
-                image_draw.line((x, y, x, y + h), fill = "black", width = 1)
-                image_draw.line((x, y + h, x + w, y + h), fill = "black", width = 1)
-                image_draw.line((x + w, y, x + w, y + h), fill = "black", width = 1)
-            else:
-                self.draw_dashed_line(image_draw, (x, y), (x + w, y))
-                self.draw_dashed_line(image_draw, (x, y), (x, y + h))
-                self.draw_dashed_line(image_draw, (x, y + h), (x + w, y + h))
-                self.draw_dashed_line(image_draw, (x + w, y), (x + w, y + h))
-        self.image_tk = ImageTk.PhotoImage(image_pil)
-        self.master.canvas.create_image(0, 0, image = self.image_tk, anchor = "nw")
-        return
+    def loop(self):
+        if self.is_draw == True:
+            inw = self.project.get_width_px()
+            inh = self.project.get_height_px()
+            exw = self.project.pixel_zoom(inw)
+            exh = self.project.pixel_zoom(inh)
+            image_bgr_in = 255 * np.ones((inh, inw, 3), np.uint8)
+            image_bgr_ex = 255 * np.ones((exh, exw, 3), np.uint8)
+            for i in range(len(self.project.data)):
+                x = self.project.mm_to_px(self.project.data[i].x)
+                y = self.project.mm_to_px(self.project.data[i].y)
+                cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
+            image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_AREA)
+            image_bgr_ex[:, :] = image_bgr_resize
+            image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
+            image_pil = Image.fromarray(image_rgb)
+            image_draw = ImageDraw.Draw(image_pil)
+            for i in range(len(self.project.data)):
+                x = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].x))
+                y = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].y))
+                w = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].w))
+                h = self.project.pixel_zoom(self.project.mm_to_px(self.project.data[i].h))
+                if self.project.data[i].select == True:
+                    image_draw.line((x, y, x + w, y), fill = "black", width = 1)
+                    image_draw.line((x, y, x, y + h), fill = "black", width = 1)
+                    image_draw.line((x, y + h, x + w, y + h), fill = "black", width = 1)
+                    image_draw.line((x + w, y, x + w, y + h), fill = "black", width = 1)
+                else:
+                    self.draw_dashed_line(image_draw, (x, y), (x + w, y))
+                    self.draw_dashed_line(image_draw, (x, y), (x, y + h))
+                    self.draw_dashed_line(image_draw, (x, y + h), (x + w, y + h))
+                    self.draw_dashed_line(image_draw, (x + w, y), (x + w, y + h))
+            self.image_tk = ImageTk.PhotoImage(image_pil)
+            self.master.canvas.create_image(0, 0, image = self.image_tk, anchor = "nw")
+            self.is_draw = False
+        self.after(int(1000 / 10), self.loop)
 
     def __init__(self, master = None):
         super().__init__(master)
@@ -124,6 +126,7 @@ class Application(tkinter.Frame):
 
         self.filename = ""
         self.is_edit = False
+        self.is_draw = True
         self.image_tk = None
         self.project = NoahProject.Project()
         self.mouse = NoahClass.Mouse(False, 0, 0, None)
@@ -131,4 +134,4 @@ class Application(tkinter.Frame):
         self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0)))
         self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 30, 30, 50, 50, (0, 255, 0)))
         self.update()
-        self.draw(self.project.data)
+        self.loop()
