@@ -80,8 +80,15 @@ class Application(tkinter.Frame):
             for i in range(len(self.project.data)):
                 x = self.project.mm_to_px(self.project.data[i].x)
                 y = self.project.mm_to_px(self.project.data[i].y)
-                cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
-            image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_AREA)
+                if self.project.data[i].mode == NoahComponent.COMPONENT_RECTANGLE:
+                    cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
+                elif self.project.data[i].mode == NoahComponent.COMPONENT_TEXT:
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\" + self.project.data[i].obj.font, self.project.data[i].obj.size)
+                    img = Image.fromarray(image_bgr_in)
+                    draw = ImageDraw.Draw(img)
+                    draw.text((x, y), self.project.data[i].obj.body, font = font, fill = self.project.data[i].fill)
+                    image_bgr_in = np.array(img)
+            image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_NEAREST)
             image_bgr_ex[:, :] = image_bgr_resize
             image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
             image_pil = Image.fromarray(image_rgb)
@@ -131,7 +138,7 @@ class Application(tkinter.Frame):
         self.project = NoahProject.Project()
         self.mouse = NoahClass.Mouse(False, 0, 0, None)
 
-        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0)))
-        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 30, 30, 50, 50, (0, 255, 0)))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0), None))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_TEXT, 20, 20, 100, 30, (0, 255, 0), NoahComponent.Text("Hello, world!", "msgothic.ttc", 320)))
         self.update()
         self.loop()
