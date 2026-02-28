@@ -86,7 +86,16 @@ class Application(tkinter.Frame):
                     font = ImageFont.truetype("C:\\Windows\\Fonts\\" + self.project.data[i].obj.font, self.project.data[i].obj.size)
                     img = Image.fromarray(image_bgr_in)
                     draw = ImageDraw.Draw(img)
-                    draw.text((x, y), self.project.data[i].obj.body, font = font, fill = self.project.data[i].fill)
+                    tx = x
+                    ty = y
+                    for char in self.project.data[i].obj.body:
+                        draw.text((tx, ty), char, font = font, fill = self.project.data[i].fill)
+                        tx = tx + self.project.data[i].obj.size
+                        if tx > x + self.project.mm_to_px(self.project.data[i].w):
+                            tx = x
+                            ty = ty + self.project.data[i].obj.lh
+                        if ty > y + self.project.mm_to_px(self.project.data[i].h):
+                            break
                     image_bgr_in = np.array(img)
             image_bgr_resize = cv2.resize(image_bgr_in, (exw, exh), interpolation = cv2.INTER_NEAREST)
             image_bgr_ex[:, :] = image_bgr_resize
@@ -139,6 +148,6 @@ class Application(tkinter.Frame):
         self.mouse = NoahClass.Mouse(False, 0, 0, None)
 
         self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0), None))
-        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_TEXT, 20, 20, 100, 30, (0, 255, 0), NoahComponent.Text("Hello, world!", "msgothic.ttc", 320)))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_TEXT, 20, 20, 200, 100, (0, 255, 0), NoahComponent.Text("MINIX/ミニックスは、1987年にオランダ・アムステルダム自由大学の教授であるアンドリュー・タネンバウムが教育目的で開発したUNIX系の軽量オペレーティングシステムで、マイクロカーネル方式を採用し構造が単純で理解しやすいことを特徴とし、後にLinux誕生にも影響を与えた。", "msgothic.ttc", 220, 240)))
         self.update()
         self.loop()

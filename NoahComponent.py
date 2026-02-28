@@ -14,8 +14,9 @@ class Box:
         self.select = 0
 
 class Text:
-    def __init__(self, body, font, size):
+    def __init__(self, body, font, size, lh):
         self.status = 0
         self.body = body
         self.font = font
         self.size = size
+        self.lh = lh
