@@ -5,3 +5,5 @@ MAIN_WINDOW_HEIGHT = 600
 
 COLOR_WHITE = "#ffffff"
 ONE_INCH_MM = 25.4
+
+MESSAGE_IS_EDIT = "編集中の内容は破棄されます。よろしいですか?"
