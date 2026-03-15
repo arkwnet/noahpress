@@ -117,6 +117,26 @@ class Application(tkinter.Frame):
             self.is_draw = True
         return
 
+    def scroll_horizontal(self, *args):
+        if args[0] == "moveto":
+            self.position_horizontal = float(args[1])
+        elif args[0] == "scroll":
+            self.position_horizontal += int(args[1]) * 0.01
+        self.position_horizontal = max(0, min(1, self.position_horizontal))
+        self.master.scroll_horizontal.set(self.position_horizontal, self.position_horizontal)
+        self.master.canvas.place_configure(x = -1.0 * self.project.pixel_zoom(self.project.get_width_px()) * self.position_horizontal)
+        return
+
+    def scroll_vertical(self, *args):
+        if args[0] == "moveto":
+            self.position_vertical = float(args[1])
+        elif args[0] == "scroll":
+            self.position_vertical += int(args[1]) * 0.01
+        self.position_vertical = max(0, min(1, self.position_vertical))
+        self.master.scroll_vertical.set(self.position_vertical, self.position_vertical)
+        self.master.canvas.place_configure(y = -1.0 * self.project.pixel_zoom(self.project.get_height_px()) * self.position_vertical)
+        return
+
     def update(self):
         self.master.canvas.place(w = self.project.pixel_zoom(self.project.get_width_px()), h = self.project.pixel_zoom(self.project.get_height_px()))
         return
@@ -203,9 +223,19 @@ class Application(tkinter.Frame):
         self.master.frame_main = tkinter.Frame(self.master)
         self.master.frame_main.place(x = 40, y = 0, w = NoahCommon.MAIN_WINDOW_WIDTH - 40, h = NoahCommon.MAIN_WINDOW_HEIGHT)
         self.master.canvas = tkinter.Canvas(self.master.frame_main, borderwidth = 1, relief = "solid")
-        self.master.canvas.place(x = 10, h = 10)
+        self.master.canvas.place(x = 0, y = 0)
         self.master.canvas.bind("<Button-1>", self.mouse_down)
         self.master.canvas.bind("<ButtonRelease-1>", self.mouse_up)
+        self.master.scroll_horizontal = tkinter.Scrollbar(self.master.frame_main, orient = "horizontal")
+        self.master.scroll_horizontal.config(command = self.scroll_horizontal)
+        self.master.scroll_horizontal.place(x = 0, y = NoahCommon.MAIN_WINDOW_HEIGHT - NoahCommon.SCROLL_SIZE, w = NoahCommon.MAIN_WINDOW_WIDTH - NoahCommon.SCROLL_SIZE - 40, h = NoahCommon.SCROLL_SIZE)
+        self.position_horizontal = 0.0
+        self.master.scroll_horizontal.set(self.position_horizontal, self.position_horizontal)
+        self.master.scroll_vertical = tkinter.Scrollbar(self.master.frame_main, orient = "vertical")
+        self.master.scroll_vertical.config(command = self.scroll_vertical)
+        self.master.scroll_vertical.place(x = NoahCommon.MAIN_WINDOW_WIDTH - NoahCommon.SCROLL_SIZE - 40, y = 0, w = NoahCommon.SCROLL_SIZE, h = NoahCommon.MAIN_WINDOW_HEIGHT - NoahCommon.SCROLL_SIZE)
+        self.position_vertical = 0.0
+        self.master.scroll_vertical.set(self.position_vertical, self.position_vertical)
 
         self.master.menu = tkinter.Menu(self.master)
         self.master.config(menu = self.master.menu)
