@@ -80,7 +80,7 @@ class Application(tkinter.Frame):
         if fn != "":
             if fn.find(".png") == -1:
                 fn = fn + ".png"
-            cv2.imwrite(fn, self.draw())
+            cv2.imwrite(fn, self.draw(1))
         return
 
     def mouse_down(self, event):
@@ -141,6 +141,21 @@ class Application(tkinter.Frame):
         self.master.canvas.place(w = self.project.pixel_zoom(self.project.get_width_px()), h = self.project.pixel_zoom(self.project.get_height_px()))
         return
 
+    def overlay_bgra(self, bg, fg, x, y):
+        h, w = fg.shape[:2]
+        bg_roi = bg[y:y + h, x:x + w]
+        fg_bgr = fg[:, :, :3].astype(float)
+        fg_a = fg[:, :, 3].astype(float) / 255.0
+        bg_bgr = bg_roi[:, :, :3].astype(float)
+        bg_a = bg_roi[:, :, 3].astype(float) / 255.0
+        fg_a_3 = np.dstack([fg_a]*3)
+        bg_a_3 = np.dstack([bg_a]*3)
+        out_bgr = fg_bgr * fg_a_3 + bg_bgr * (1 - fg_a_3)
+        out_a = fg_a + bg_a * (1 - fg_a)
+        out = np.dstack([out_bgr, out_a * 255]).astype(np.uint8)
+        bg[y:y + h, x:x + w] = out
+        return bg
+
     def draw_dashed_line(self, img, start, end, dash = 2, gap = 3, fill = "black", width = 1):
         x1, y1 = start
         x2, y2 = end
@@ -156,37 +171,43 @@ class Application(tkinter.Frame):
             img.line((sx, sy, ex, ey), fill = fill, width = width)
         return
 
-    def draw(self):
-        image_bgr_in = 255 * np.ones((self.project.get_height_px(), self.project.get_width_px(), 3), np.uint8)
+    def draw(self, zoom):
+        image_bgr_in = 255 * np.zeros((int(self.project.get_height_px() * zoom), int(self.project.get_width_px() * zoom), 4), np.uint8)
+        cv2.rectangle(image_bgr_in, (0, 0), (int(self.project.get_width_px() * zoom), int(self.project.get_height_px() * zoom)), (255, 255, 255, 255), thickness = -1)
         for i in range(len(self.project.data)):
-            x = self.project.mm_to_px(self.project.data[i].x)
-            y = self.project.mm_to_px(self.project.data[i].y)
+            x = int(self.project.mm_to_px(self.project.data[i].x) * zoom)
+            y = int(self.project.mm_to_px(self.project.data[i].y) * zoom)
             if self.project.data[i].mode == NoahComponent.COMPONENT_RECTANGLE:
-                cv2.rectangle(image_bgr_in, (x, y), (x + self.project.mm_to_px(self.project.data[i].w), y + self.project.mm_to_px(self.project.data[i].h)), self.project.data[i].fill, thickness = -1)
+                w = int(self.project.mm_to_px(self.project.data[i].w) * zoom)
+                h = int(self.project.mm_to_px(self.project.data[i].h) * zoom)
+                cv2.rectangle(image_bgr_in, (x, y), (x + w, y + h), self.project.data[i].fill, thickness = -1)
             elif self.project.data[i].mode == NoahComponent.COMPONENT_TEXT:
+                w = self.project.mm_to_px(self.project.data[i].w)
+                h = self.project.mm_to_px(self.project.data[i].h)
+                image_bgr_temp = 255 * np.zeros((h, w, 4), np.uint8)
                 font = ImageFont.truetype("C:\\Windows\\Fonts\\" + self.project.data[i].obj.font, self.project.data[i].obj.size)
-                img = Image.fromarray(image_bgr_in)
+                img = Image.fromarray(image_bgr_temp)
                 draw = ImageDraw.Draw(img)
-                tx = x
-                ty = y
+                tx = 0
+                ty = 0
                 for char in self.project.data[i].obj.body:
                     draw.text((tx, ty), char, font = font, fill = self.project.data[i].fill)
                     tx = tx + self.project.data[i].obj.size
-                    if tx > x + self.project.mm_to_px(self.project.data[i].w):
-                        tx = x
+                    if tx + self.project.data[i].obj.size >= w:
+                        tx = 0
                         ty = ty + self.project.data[i].obj.lh
-                    if ty > y + self.project.mm_to_px(self.project.data[i].h):
+                    if ty >= h:
                         break
-                image_bgr_in = np.array(img)
+                image_bgr_temp = np.array(img)
+                image_bgr_temp = cv2.resize(image_bgr_temp, (int(w * zoom), int(h * zoom)), interpolation = cv2.INTER_NEAREST)
+                image_bgr_in = self.overlay_bgra(image_bgr_in, image_bgr_temp, x, y)
         return image_bgr_in
 
     def loop(self):
         if self.is_draw == True:
             exw = self.project.pixel_zoom(self.project.get_width_px())
             exh = self.project.pixel_zoom(self.project.get_height_px())
-            image_bgr_ex = 255 * np.ones((exh, exw, 3), np.uint8)
-            image_bgr_resize = cv2.resize(self.draw(), (exw, exh), interpolation = cv2.INTER_NEAREST)
-            image_bgr_ex[:, :] = image_bgr_resize
+            image_bgr_ex = self.draw(self.project.zoom / 100)
             image_rgb = cv2.cvtColor(image_bgr_ex, cv2.COLOR_BGR2RGB)
             image_pil = Image.fromarray(image_rgb)
             image_draw = ImageDraw.Draw(image_pil)
@@ -257,7 +278,7 @@ class Application(tkinter.Frame):
         self.mouse = NoahClass.Mouse(False, 0, 0, None)
 
         self.set_title()
-        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0), None))
-        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_TEXT, 20, 20, 200, 100, (0, 255, 0), NoahComponent.Text("MINIX/ミニックスは、1987年にオランダ・アムステルダム自由大学の教授であるアンドリュー・タネンバウムが教育目的で開発したUNIX系の軽量オペレーティングシステムで、マイクロカーネル方式を採用し構造が単純で理解しやすいことを特徴とし、後にLinux誕生にも影響を与えた。", "msgothic.ttc", 220, 240)))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_RECTANGLE, 10, 10, 60, 40, (255, 0, 0, 255), None))
+        self.project.data.append(NoahComponent.Box(NoahComponent.COMPONENT_TEXT, 20, 20, 200, 100, (0, 255, 0, 255), NoahComponent.Text("MINIX/ミニックスは、1987年にオランダ・アムステルダム自由大学の教授であるアンドリュー・タネンバウムが教育目的で開発したUNIX系の軽量オペレーティングシステムで、マイクロカーネル方式を採用し構造が単純で理解しやすいことを特徴とし、後にLinux誕生にも影響を与えた。", "msgothic.ttc", 220, 240)))
         self.update()
         self.loop()

@@ -2,7 +2,7 @@ import NoahCommon
 
 class Project:
     def __init__(self):
-        self.version = "20260125"
+        self.version = "20260322"
         self.w = 257
         self.h = 364
         self.unit = "mm"
